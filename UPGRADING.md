@@ -12,7 +12,7 @@ point, supporting PSR-15 while directly supporting client-middleware is impossib
 
 #### Deprecation of http-interop/http-middleware
 Note that [http-interop/http-middleware](https://github.com/http-interop/http-middleware) has been deprecated and links to [http-interop/http-server-middleware](https://github.com/http-interop/http-server-middleware) and [http-interop/http-server-handler](https://github.com/http-interop/http-server-handler).   
-This changes the middleware signature from `function process(ServerRequestInterface $request, DelegateInterface $delegate)` to something like `function process(ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface`.   
+This changes the middleware signature from `function process(ServerRequestInterface $request, DelegateInterface $delegate)` to something like `function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface`.   
 This package still supports passing in callable and invokable classes directly as middleware.
 
 ### From 1.x to 2.x
