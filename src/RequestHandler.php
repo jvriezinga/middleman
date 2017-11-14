@@ -2,7 +2,7 @@
 
 namespace mindplay\middleman;
 
-use Interop\Http\ServerMiddleware\DelegateInterface;
+use Interop\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -11,7 +11,7 @@ use Psr\Http\Message\ServerRequestInterface;
  *
  * @internal
  */
-class Delegate implements DelegateInterface
+class RequestHandler implements RequestHandlerInterface
 {
     /**
      * @var callable
@@ -32,7 +32,7 @@ class Delegate implements DelegateInterface
      * @param ServerRequestInterface $request
      * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $request)
+    public function handle(ServerRequestInterface $request)
     {
         return call_user_func($this->callback, $request);
     }
