@@ -61,10 +61,10 @@ class Dispatcher implements MiddlewareInterface
     /**
      * @inheritdoc
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $this->stack[] = function (ServerRequestInterface $request) use ($requestHandler) {
-            return $requestHandler->handle($request);
+        $this->stack[] = function (ServerRequestInterface $request) use ($handler) {
+            return $handler->handle($request);
         };
 
         $response = $this->dispatch($request);
