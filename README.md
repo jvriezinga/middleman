@@ -19,32 +19,35 @@ You can implement simple middleware "in place" by using anonymous functions in a
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
 use Zend\Diactoros\Response;
 
 $dispatcher = new Dispatcher([
-    function (ServerRequestInterface $request, callable $next) {
-        return $next($request); // delegate control to next middleware
+    function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
+        return $requestHandler->handle($request); // delegate control to next middleware
     },
-    function (ServerRequestInterface $request) {
+    function (ServerRequestInterface $request): ResponseInterface {
         return (new Response())->withBody(...); // abort middleware stack and return the response
     },
     // ...
 ]);
-
 $response = $dispatcher->dispatch($request);
 ```
 
 For simplicity, the middleware-stack in a `Dispatcher` is immutable - if you need a stack you can manipulate, `array`, `ArrayObject`, `SplStack` etc. are all fine choices.
 
-To implement reusable middleware components, you should implement the PSR-15 [MiddlewareInterface](https://github.com/http-interop/http-middleware/blob/master/src/MiddlewareInterface.php).
+To implement reusable middleware components, you should implement the PSR-15 [MiddlewareInterface](https://github.com/http-interop/http-server-middleware/blob/master/src/MiddlewareInterface.php).
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 use Interop\Http\ServerMiddleware\MiddlewareInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class MyMiddleware implements MiddlewareInteface
 {
-    public function process(ServerRequestInterface $request, DelegateInterface $delegate) {
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
         // ...
     }
 }
@@ -85,8 +88,8 @@ Middleware is a powerful, yet simple control facility.
 
 If you're new to the concept of middleware, the following section will provide a basic overview.
 
-In a nutshell, a middleware component is a function (or [MiddlewareInterface](src/MiddlewareInterface.php) instance)
-that takes an incoming (PSR-7) `RequestInterface` object, and returns a `ResponseInterface` object.
+In a nutshell, a middleware component is a function (or [MiddlewareInterface](https://github.com/http-interop/http-server-middleware/blob/master/src/MiddlewareInterface.php) instance)
+that takes an incoming (PSR-7) `ServerRequestInterface` object, and returns a `ResponseInterface` object.
 
 It does this in one of three ways: by *assuming*, *delegating*, or *sharing* responsibility
 for the creation of a response object.
@@ -98,8 +101,11 @@ rather than delegating to the next middleware on the stack:
 
 ```php
 use Zend\Diactoros\Response;
+use Psr\Http\Message\ServerRequestInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
 
-function ($request, $next) {
+function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
     return (new Response())->withBody(...); // next middleware won't be run
 }
 ```
@@ -109,14 +115,18 @@ further down the stack.
 
 ##### 2. Delegating Responsibility
 
-By calling `$next`, middleware near the top of the stack may choose to fully delegate the
+By calling `RequestHandlerInterface::handle`, middleware near the top of the stack may choose to fully delegate the
 responsibility for the creation of a response to other middleware components
 further down the stack:
 
 ```php
-function ($request, $next) {
+use Psr\Http\Message\ServerRequestInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
+
+function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
     if ($request->getMethod() !== 'POST') {
-        return $next($request); // run the next middleware
+        return $requestHandler->handle($request); // run the next middleware
     } else {
         // ...
     }
@@ -134,8 +144,12 @@ the response to middleware further down the stack, and then make additional chan
 the returned response before returning it:
 
 ```php
-function ($request, $next) {
-    $result = $next($request); // run the next middleware
+use Psr\Http\Message\ServerRequestInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
+
+function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
+    $result = $requestHandler->handle($request); // run the next middleware
 
     return $result->withHeader(...); // then modify it's response
 }
