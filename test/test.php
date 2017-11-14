@@ -46,8 +46,8 @@ test(
     'Throws for unresolved request',
     function () {
         $dispatcher = new Dispatcher([
-            function (ServerRequestInterface $request, $next) {
-                return $next($request);
+            function (ServerRequestInterface $request, $requestHandler) {
+                return $requestHandler($request);
             }
         ]);
 
@@ -71,7 +71,7 @@ test(
         $request = mock_server_request();
 
         $dispatcher = new Dispatcher([
-            function (ServerRequestInterface $received_request, $next) use ($request, &$called, &$received) {
+            function (ServerRequestInterface $received_request, $requestHandler) use ($request, &$called, &$received) {
                 $called = true;
 
                 $received = $received_request === $request;
@@ -95,12 +95,12 @@ test(
         $order = 1;
 
         $dispatcher = new Dispatcher([
-            function (ServerRequestInterface $request, $next) use (&$called_one, &$order) {
+            function (ServerRequestInterface $request, $requestHandler) use (&$called_one, &$order) {
                 $called_one = $order++;
 
-                return $next($request);
+                return $requestHandler($request);
             },
-            function (ServerRequestInterface $request, $next) use (&$called_two, &$order) {
+            function (ServerRequestInterface $request, $requestHandler) use (&$called_two, &$order) {
                 $called_two = $order++;
 
                 return mock_response();
@@ -140,10 +140,10 @@ test(
 
                 $resolved[$init] += 1;
 
-                return function ($request, $next) use (&$called, $init) {
+                return function ($request, $requestHandler) use (&$called, $init) {
                     $called[$init] += 1;
 
-                    return $next($request);
+                    return $requestHandler($request);
                 };
             }
         );
@@ -215,10 +215,10 @@ test(
         $called_indirect = false;
         $called_direct = false;
 
-        $container->contents['foo'] = function (ServerRequestInterface $request, $next) use (&$called_indirect) {
+        $container->contents['foo'] = function (ServerRequestInterface $request, $requestHandler) use (&$called_indirect) {
             $called_indirect = true;
 
-            return $next($request);
+            return $requestHandler($request);
         };
 
         $resolver = new ContainerResolver($container);
@@ -226,7 +226,7 @@ test(
         $dispatcher = new Dispatcher(
             [
                 'foo', // to be resolved by $container via InteropResolver
-                function (ServerRequestInterface $request, $next) use (&$called_direct) {
+                function (ServerRequestInterface $request, $requestHandler) use (&$called_direct) {
                     $called_direct = true;
 
                     return mock_response();
@@ -261,24 +261,24 @@ test(
 
         $dispatcher = new Dispatcher(
             [
-                function (ServerRequestInterface $request, $next) use (&$result) {
+                function (ServerRequestInterface $request, $requestHandler) use (&$result) {
                     $result[] = 1;
 
-                    return $next($request);
+                    return $requestHandler($request);
                 },
                 new Dispatcher([
-                    function (ServerRequestInterface $request, $next) use (&$result) {
+                    function (ServerRequestInterface $request, $requestHandler) use (&$result) {
                         $result[] = 2;
 
-                        return $next($request);
+                        return $requestHandler($request);
                     },
-                    function (ServerRequestInterface $request, $next) use (&$result) {
+                    function (ServerRequestInterface $request, $requestHandler) use (&$result) {
                         $result[] = 3;
 
-                        return $next($request);
+                        return $requestHandler($request);
                     }
                 ]),
-                function (ServerRequestInterface $request, $next) use (&$result) {
+                function (ServerRequestInterface $request, $requestHandler) use (&$result) {
                     $result[] = 4;
 
                     return mock_response();
@@ -303,9 +303,9 @@ class InvokableMiddleware
         $this->result = $result;
     }
 
-    public function __invoke(ServerRequestInterface $request, $delegate)
+    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $requestHandler)
     {
-        return $this->result ?: $delegate($request);
+        return $this->result ?: $requestHandler->handle($request);
     }
 }
 
