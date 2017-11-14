@@ -24,8 +24,8 @@ use Psr\Http\Message\ResponseInterface;
 use Zend\Diactoros\Response;
 
 $dispatcher = new Dispatcher([
-    function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
-        return $requestHandler->handle($request); // delegate control to next middleware
+    function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+        return $handler->handle($request); // delegate control to next middleware
     },
     function (ServerRequestInterface $request): ResponseInterface {
         return (new Response())->withBody(...); // abort middleware stack and return the response
@@ -47,7 +47,7 @@ use Psr\Http\Message\ResponseInterface;
 
 class MyMiddleware implements MiddlewareInteface
 {
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
         // ...
     }
 }
@@ -105,7 +105,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 
-function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
+function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
     return (new Response())->withBody(...); // next middleware won't be run
 }
 ```
@@ -124,9 +124,9 @@ use Psr\Http\Message\ServerRequestInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 
-function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
+function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
     if ($request->getMethod() !== 'POST') {
-        return $requestHandler->handle($request); // run the next middleware
+        return $handler->handle($request); // run the next middleware
     } else {
         // ...
     }
@@ -148,8 +148,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 
-function (ServerRequestInterface $request, RequestHandlerInterface $requestHandler): ResponseInterface {
-    $result = $requestHandler->handle($request); // run the next middleware
+function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+    $result = $handler->handle($request); // run the next middleware
 
     return $result->withHeader(...); // then modify it's response
 }
