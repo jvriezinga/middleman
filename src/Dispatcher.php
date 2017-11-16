@@ -2,8 +2,8 @@
 
 namespace mindplay\middleman;
 
-use Interop\Http\ServerMiddleware\DelegateInterface;
-use Interop\Http\ServerMiddleware\MiddlewareInterface;
+use Interop\Http\Server\RequestHandlerInterface;
+use Interop\Http\Server\MiddlewareInterface;
 use InvalidArgumentException;
 use LogicException;
 use mindplay\readable;
@@ -61,10 +61,10 @@ class Dispatcher implements MiddlewareInterface
     /**
      * @inheritdoc
      */
-    public function process(ServerRequestInterface $request, DelegateInterface $delegate)
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $this->stack[] = function (ServerRequestInterface $request) use ($delegate) {
-            return $delegate->process($request);
+        $this->stack[] = function (ServerRequestInterface $request) use ($handler) {
+            return $handler->handle($request);
         };
 
         $response = $this->dispatch($request);
@@ -77,12 +77,12 @@ class Dispatcher implements MiddlewareInterface
     /**
      * @param int $index middleware stack index
      *
-     * @return Delegate
+     * @return RequestHandler
      */
     private function resolve($index)
     {
         if (isset($this->stack[$index])) {
-            return new Delegate(function (ServerRequestInterface $request) use ($index) {
+            return new RequestHandler(function (ServerRequestInterface $request) use ($index) {
                 $middleware = $this->resolver
                     ? call_user_func($this->resolver, $this->stack[$index])
                     : $this->stack[$index]; // as-is
@@ -113,7 +113,7 @@ class Dispatcher implements MiddlewareInterface
             });
         }
 
-        return new Delegate(function () {
+        return new RequestHandler(function () {
             throw new LogicException("unresolved request: middleware stack exhausted with no result");
         });
     }
